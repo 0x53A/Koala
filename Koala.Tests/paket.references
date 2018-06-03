@@ -2,6 +2,10 @@ Microsoft.AspNetCore.Server.Kestrel
 Microsoft.AspNetCore.Mvc
 Microsoft.AspNetCore
 Microsoft.AspNetCore.HttpsPolicy
+Microsoft.AspNetCore.Mvc.Formatters.Xml
 
 #xunit
-#xunit.runner.visualstudio
+Expecto
+expecto.xunit
+xunit.runner.visualstudio
+ExpressionToCodeLib

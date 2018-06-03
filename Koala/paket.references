@@ -1,1 +1,5 @@
+# for the routing parts, could probably be reduced!
 Microsoft.AspNetCore
+
+# for the content negotiation and formatting
+microsoft.aspnetcore.mvc.core

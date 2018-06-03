@@ -1,9 +1,14 @@
 source https://api.nuget.org/v3/index.json
 storage: none
 
+
 nuget Microsoft.AspNetCore.Server.Kestrel
 nuget Microsoft.AspNetCore.Mvc
 nuget Microsoft.AspNetCore
 nuget Microsoft.AspNetCore.HttpsPolicy
+nuget Microsoft.AspNetCore.Mvc.Formatters.Xml
 nuget xunit
 nuget xunit.runner.visualstudio
+nuget Expecto
+nuget expecto.xunit
+nuget ExpressionToCodeLib

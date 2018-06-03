@@ -6,6 +6,10 @@ using System.Threading.Tasks;
 using Microsoft.Net.Http.Headers;
 using System.Linq;
 using System.Security.Principal;
+using Microsoft.AspNetCore.Mvc.Infrastructure;
+using Microsoft.AspNetCore.Mvc;
+using Microsoft.Extensions.DependencyInjection;
+using Microsoft.AspNetCore.Routing;
 
 namespace Koala
 {
@@ -22,10 +26,48 @@ namespace Koala
         {
             return HttpHandler.FromFunc(async ctx =>
             {
-                ctx.Response.Headers[HeaderNames.ContentType] = "text/plain";
+                ctx.Response.Headers[HeaderNames.ContentType] = "text/plain; charset=utf-8";
                 var bytes = Encoding.UTF8.GetBytes(s);
                 ctx.Response.Headers[HeaderNames.ContentLength] = bytes.Length.ToString();
                 await ctx.Response.Body.WriteAsync(bytes, 0, bytes.Length);
+                return ValueOption.Some(ctx);
+            });
+        }
+
+        public static HttpHandler json(string s)
+        {
+            return HttpHandler.FromFunc(async ctx =>
+            {
+                ctx.Response.Headers[HeaderNames.ContentType] = "application/json; charset=utf-8"; // note: the charset is theoretically a spec violation
+                var bytes = Encoding.UTF8.GetBytes(s);
+                ctx.Response.Headers[HeaderNames.ContentLength] = bytes.Length.ToString();
+                await ctx.Response.Body.WriteAsync(bytes, 0, bytes.Length);
+                return ValueOption.Some(ctx);
+            });
+        }
+
+        public static HttpHandler serialize_json(object o)
+        {
+            return HttpHandler.FromFunc(async ctx =>
+            {
+                // REVIEW: do we need error handling? What happens if an exception bubbles up to asp.net core?
+                var s = Newtonsoft.Json.JsonConvert.SerializeObject(o);
+                var bytes = Encoding.UTF8.GetBytes(s);
+                ctx.Response.Headers[HeaderNames.ContentType] = "application/json; charset=utf-8"; // note: the charset is theoretically a spec violation
+                ctx.Response.Headers[HeaderNames.ContentLength] = bytes.Length.ToString();
+                await ctx.Response.Body.WriteAsync(bytes, 0, bytes.Length);
+                return ValueOption.Some(ctx);
+            });
+        }
+
+        public static HttpHandler serialize_conneg(object o)
+        {
+            return HttpHandler.FromFunc(async ctx =>
+            {
+                var executor = ctx.RequestServices.GetRequiredService<IActionResultExecutor<ObjectResult>>();
+                var routeCtx = new RouteContext(ctx);
+                var actx = new ActionContext(ctx, routeCtx.RouteData, new Microsoft.AspNetCore.Mvc.Abstractions.ActionDescriptor());
+                await executor.ExecuteAsync(actx, new ObjectResult(o));
                 return ValueOption.Some(ctx);
             });
         }
@@ -105,15 +147,9 @@ namespace Koala
             });
         }
 
-        public static HttpHandler route(string path, HttpHandler h)
+        public static HttpHandler route(string path, HttpHandler next)
         {
-            return HttpHandler.FromFunc(async ctx =>
-            {
-                var currentPath = GetPath(ctx);
-                if (currentPath == path)
-                    return await h.Invoke(ctx);
-                return ValueOption.None;
-            });
+            return route(path).WithNext(next);
         }
 
 
@@ -126,7 +162,7 @@ namespace Koala
                 return null;
             if (basic.Length > 1)
             {
-                // uhh, do we want to error? Atm just take the first ...
+                // uhh, do we want to error? Just take the first ...
             }
 
             var base64 = basic.First().Substring("Basic ".Length);
@@ -136,7 +172,6 @@ namespace Koala
             var pw = decoded.Substring(iColon + 1);
             return (user, pw);
         }
-
 
         public static PartialHttpHandler basicAuth(Func<(string user, string pw), bool> auth)
         {
@@ -158,22 +193,9 @@ namespace Koala
             });
         }
 
-        public static HttpHandler basicAuth(HttpHandler next)
+        public static HttpHandler basicAuth(Func<(string user, string pw), bool> auth, HttpHandler next)
         {
-            return HttpHandler.FromFunc(async ctx =>
-            {
-                var auth = ReadBasicAuth(ctx);
-                if (auth == null)
-                {
-                    ctx.Response.StatusCode = StatusCodes.Status401Unauthorized;
-                    ctx.Response.Headers.Add("WWW-Authenticate", "Basic");
-                    // DON'T return None, we did handle the request and it failed!
-                    return ValueOption.Some(ctx);
-                }
-                // TODO: validate password
-                ctx.User = new System.Security.Claims.ClaimsPrincipal(new GenericIdentity(auth.Value.user, "Basic"));
-                return await next.Invoke(ctx);
-            });
+            return basicAuth(auth).WithNext(next);
         }
 
     }
