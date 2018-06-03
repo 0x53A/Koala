@@ -1,0 +1,9 @@
+source https://api.nuget.org/v3/index.json
+storage: none
+
+nuget Microsoft.AspNetCore.Server.Kestrel
+nuget Microsoft.AspNetCore.Mvc
+nuget Microsoft.AspNetCore
+nuget Microsoft.AspNetCore.HttpsPolicy
+nuget xunit
+nuget xunit.runner.visualstudio
