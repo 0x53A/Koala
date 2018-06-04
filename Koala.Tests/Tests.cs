@@ -12,6 +12,8 @@ using ExpressionToCodeLib;
 using Newtonsoft.Json;
 using Microsoft.AspNetCore.Hosting.Server.Features;
 using System.Linq;
+using System.Collections.Generic;
+using System.Reflection;
 
 namespace Koala.Tests
 {
@@ -58,18 +60,55 @@ namespace Koala.Tests
         public static void Main(string[] args)
         {
             Expecto.CSharp.Runner.RunTestsInAssembly(Expecto.Impl.ExpectoConfig.defaultConfig, args);
+            Console.ReadLine();
         }
 
 
+        private static IEnumerable<Test> DiscoverTestMethods<T>()
+        {
+            var t = typeof(T);
+            foreach (var m in t.GetMethods())
+            {
+                var isTaskReturning = typeof(Task).IsAssignableFrom(m.ReturnType);
+                if (m.GetCustomAttribute<FTestsAttribute>() != null)
+                {
+                    if (isTaskReturning)
+                        yield return Runner.FocusedTestCase(m.Name, () => (Task)m.Invoke(null, Array.Empty<object>()));
+                    else
+                        yield return Runner.FocusedTestCase(m.Name, () => m.Invoke(null, Array.Empty<object>()));
+                }
+                else if (m.GetCustomAttribute<PTestsAttribute>() != null)
+                {
+                    if (isTaskReturning)
+                        yield return Runner.PendingTestCase(m.Name, () => (Task) m.Invoke(null, Array.Empty<object>()));
+                    else
+                        yield return Runner.PendingTestCase(m.Name, () => m.Invoke(null, Array.Empty<object>()));
+                }
+                else if (m.GetCustomAttribute<TestsAttribute>() != null)
+                {
+                    if (isTaskReturning)
+                        yield return Runner.TestCase(m.Name, () => (Task) m.Invoke(null, Array.Empty<object>()));
+                    else
+                    yield return Runner.TestCase(m.Name, () => m.Invoke(null, Array.Empty<object>()));
+                }
+            }
+        }
+
         [Tests]
         public static Test Tests =
-            Runner.TestList("general groupings", new Test[] {
+            Runner.TestList("general groupings", /*new Test[] {
                 Runner.TestCase("basic auth", () => TestBasicAuth()),
                 Runner.TestCase("content negotiation - default", () => ConNeg_default()),
                 Runner.TestCase("content negotiation - json", () => ConNeg_json()),
                 Runner.TestCase("content negotiation - xml", () => ConNeg_xml()),
-});
+                Runner.TestCase("content negotiation - null - default", () => Conneg_null_default()),
+                Runner.TestCase("content negotiation - null - json", () => Conneg_null_json()),
+                Runner.TestCase("content negotiation - null - xml", () => ConNeg_null_xml()),
+}*/
+                DiscoverTestMethods<TestClass>()
+            );
 
+        [Tests]
         public static void TestBasicAuth()
         {
             // The function to validate credentials.
@@ -101,6 +140,7 @@ namespace Koala.Tests
             }
         }
 
+        [Tests]
         public static void GiraffeSample()
         {
             // The function to validate credentials.
@@ -133,17 +173,19 @@ namespace Koala.Tests
 
         }
 
+        [Tests]
         public static async Task ConNeg_default()
         {
             var obj = new { X = 1, Y = "2", Z = 3.3 };
             var handler = GET(route("/api/value", serialize_conneg(obj)));
 
-            using (var webHost = WebHostFromKoalaHandler(Array.Empty<string>(), 12345, handler))
+            using (var webHost = WebHostFromKoalaHandler(Array.Empty<string>(), 0, handler))
             {
                 webHost.Start();
+                var port = new Uri(webHost.ServerFeatures.Get<IServerAddressesFeature>().Addresses.First()).Port;
 
                 var httpClient = new HttpClient();
-                var x = await httpClient.GetAsync("http://localhost:12345/api/value");
+                var x = await httpClient.GetAsync($"http://localhost:{port}/api/value");
                 PAssert.That(() => x.IsSuccessStatusCode);
                 PAssert.That(() => x.Content.Headers.ContentType.MediaType == "application/json");
                 var json = await x.Content.ReadAsStringAsync();
@@ -151,18 +193,20 @@ namespace Koala.Tests
             }
         }
 
+        [Tests]
         public static async Task ConNeg_json()
         {
             var obj = new { X = 1, Y = "2", Z = 3.3 };
             var handler = GET(route("/api/value", serialize_conneg(obj)));
 
-            using (var webHost = WebHostFromKoalaHandler(Array.Empty<string>(), 12345, handler))
+            using (var webHost = WebHostFromKoalaHandler(Array.Empty<string>(), 0, handler))
             {
                 webHost.Start();
+                var port = new Uri(webHost.ServerFeatures.Get<IServerAddressesFeature>().Addresses.First()).Port;
 
                 var httpClient = new HttpClient();
                 httpClient.DefaultRequestHeaders.Add("Accept", "application/json");
-                var x = await httpClient.GetAsync("http://localhost:12345/api/value");
+                var x = await httpClient.GetAsync($"http://localhost:{port}/api/value");
                 PAssert.That(() => x.IsSuccessStatusCode);
                 PAssert.That(() => x.Content.Headers.ContentType.MediaType == "application/json");
                 var json = await x.Content.ReadAsStringAsync();
@@ -177,6 +221,7 @@ namespace Koala.Tests
             public double Z { get; set; }
         }
 
+        [Tests]
         public static async Task ConNeg_xml()
         {
             var obj = new DataObject { X = 1, Y = "2", Z = 3.3 };
@@ -195,6 +240,56 @@ namespace Koala.Tests
 
                 var xml = await x.Content.ReadAsStringAsync();
                 PAssert.That(() => xml == "<DataObject xmlns:xsi=\"http://www.w3.org/2001/XMLSchema-instance\" xmlns:xsd=\"http://www.w3.org/2001/XMLSchema\"><X>1</X><Y>2</Y><Z>3.3</Z></DataObject>");
+            }
+        }
+
+        [Tests]
+        public static async Task Conneg_null_default()
+        {
+            var handler = GET(route("/api/value", serialize_conneg(null)));
+
+            using (var webHost = WebHostFromKoalaHandler(Array.Empty<string>(), 0, handler))
+            {
+                webHost.Start();
+                var port = new Uri(webHost.ServerFeatures.Get<IServerAddressesFeature>().Addresses.First()).Port;
+
+                var httpClient = new HttpClient();
+                var x = await httpClient.GetAsync($"http://localhost:{port}/api/value");
+                PAssert.That(() => x.StatusCode == System.Net.HttpStatusCode.NoContent);
+            }
+        }
+
+        [Tests]
+        public static async Task Conneg_null_json()
+        {
+            var handler = GET(route("/api/value", serialize_conneg(null)));
+
+            using (var webHost = WebHostFromKoalaHandler(Array.Empty<string>(), 0, handler))
+            {
+                webHost.Start();
+                var port = new Uri(webHost.ServerFeatures.Get<IServerAddressesFeature>().Addresses.First()).Port;
+
+                var httpClient = new HttpClient();
+                httpClient.DefaultRequestHeaders.Add("Accept", "application/json");
+                var x = await httpClient.GetAsync($"http://localhost:{port}/api/value");
+                PAssert.That(() => x.StatusCode == System.Net.HttpStatusCode.NoContent);
+            }
+        }
+
+        [Tests]
+        public static async Task ConNeg_null_xml()
+        {
+            var handler = GET(route("/api/value", serialize_conneg(null)));
+
+            using (var webHost = WebHostFromKoalaHandler(Array.Empty<string>(), 0, handler))
+            {
+                webHost.Start();
+                var port = new Uri(webHost.ServerFeatures.Get<IServerAddressesFeature>().Addresses.First()).Port;
+
+                var httpClient = new HttpClient();
+                httpClient.DefaultRequestHeaders.Add("Accept", "application/xml");
+                var x = await httpClient.GetAsync($"http://localhost:{port}/api/value");
+                PAssert.That(() => x.StatusCode == System.Net.HttpStatusCode.NoContent);
             }
         }
     }
