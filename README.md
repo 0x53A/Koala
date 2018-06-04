@@ -113,7 +113,7 @@ The rest is just standard ASP.NET Core.
 
                     })),
 
-                  route("/api",
+                  subRoute("/api",
                     choose(new[]{
                         GET(route("/time", HttpHandler.Wrap(ctx => text($"{DateTime.Now}")))),
                         POST(route("/ping", text("pong")))
