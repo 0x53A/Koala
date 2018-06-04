@@ -144,37 +144,6 @@ namespace Koala.Tests
             }
         }
 
-        //public static void GiraffeSample()
-        //{
-        //    // The function to validate credentials.
-        //    bool authenticator((string user, string pw) credentials)
-        //    {
-        //        // Normally you would hash the password and compare it against a database or whatever.
-        //        // Here it is just checked against a hardcoded value.
-        //        return credentials == ("Bond", "007");
-        //    }
-
-        //    var handler =
-        //        choose(new[]
-        //        {
-        //          GET(
-        //            choose(new[]
-        //            {
-        //                route("/", text("Hello World!")),
-
-        //                // show how handlers can be combined, and how easily a new handler can be created from these building blocks.
-        //                route("/protected", basicAuth(authenticator, HttpHandler.Wrap(ctx => text($"Welcome Agent {ctx.User.Identity.Name}!"))))
-
-        //            })),
-
-        //          route("/api",
-        //            choose(new[]{
-        //                GET(route("/time", HttpHandler.Wrap(ctx => text($"{DateTime.Now}")))),
-        //                POST(route("/ping", text("pong")))
-        //          }))
-        //        });
-        //}
-
         [Tests]
         public static async Task ConNeg_default()
         {
