@@ -22,15 +22,30 @@ namespace Koala
     {
         const string RouteKey = "koala_route";
 
+        private static async Task<ValueOption<HttpContext>> WriteBytesToResponse(HttpContext ctx, byte[] bytes)
+        {
+            ctx.Response.Headers[HeaderNames.ContentLength] = bytes.Length.ToString();
+            await ctx.Response.Body.WriteAsync(bytes, 0, bytes.Length);
+            return ValueOption.Some(ctx);
+        }
+
+        private static async Task<ValueOption<HttpContext>> WriteUtf8StringToResponse(string s, HttpContext ctx)
+        {
+            var bytes = Encoding.UTF8.GetBytes(s);
+            return await WriteBytesToResponse(ctx, bytes);
+        }
+
+        private static void SetContentType(HttpContext ctx, string ct)
+        {
+            ctx.Response.Headers[HeaderNames.ContentType] = ct;
+        }
+
         public static HttpHandler text(string s)
         {
             return HttpHandler.FromFunc(async ctx =>
             {
-                ctx.Response.Headers[HeaderNames.ContentType] = "text/plain; charset=utf-8";
-                var bytes = Encoding.UTF8.GetBytes(s);
-                ctx.Response.Headers[HeaderNames.ContentLength] = bytes.Length.ToString();
-                await ctx.Response.Body.WriteAsync(bytes, 0, bytes.Length);
-                return ValueOption.Some(ctx);
+                SetContentType(ctx, "text/plain; charset=utf-8");
+                return await WriteUtf8StringToResponse(s, ctx);
             });
         }
 
@@ -38,11 +53,8 @@ namespace Koala
         {
             return HttpHandler.FromFunc(async ctx =>
             {
-                ctx.Response.Headers[HeaderNames.ContentType] = "application/json; charset=utf-8"; // note: the charset is theoretically a spec violation
-                var bytes = Encoding.UTF8.GetBytes(s);
-                ctx.Response.Headers[HeaderNames.ContentLength] = bytes.Length.ToString();
-                await ctx.Response.Body.WriteAsync(bytes, 0, bytes.Length);
-                return ValueOption.Some(ctx);
+                SetContentType(ctx, "application/json; charset=utf-8"); // note: the charset is theoretically a spec violation
+                return await WriteUtf8StringToResponse(s, ctx);
             });
         }
 
@@ -52,11 +64,7 @@ namespace Koala
             {
                 // REVIEW: do we need error handling? What happens if an exception bubbles up to asp.net core?
                 var s = Newtonsoft.Json.JsonConvert.SerializeObject(o);
-                var bytes = Encoding.UTF8.GetBytes(s);
-                ctx.Response.Headers[HeaderNames.ContentType] = "application/json; charset=utf-8"; // note: the charset is theoretically a spec violation
-                ctx.Response.Headers[HeaderNames.ContentLength] = bytes.Length.ToString();
-                await ctx.Response.Body.WriteAsync(bytes, 0, bytes.Length);
-                return ValueOption.Some(ctx);
+                return await json(s).Invoke(ctx);
             });
         }
 
@@ -120,8 +128,7 @@ namespace Koala
         {
             if (ctx.Items.TryGetValue(RouteKey, out var val) &&
                 val is string s &&
-                !string.IsNullOrWhiteSpace(s) &&
-                ctx.Request.Path.Value.StartsWith(s))
+                !string.IsNullOrWhiteSpace(s))
             {
                 return ValueOption.Some(s);
             }
@@ -132,8 +139,32 @@ namespace Koala
         {
             return GetSavedSubPath(ctx)
                     .Match(
-                        s => ctx.Request.Path.Value.Substring(s.Length),
+                        s =>
+                        {
+                            if (ctx.Request.Path.Value.StartsWith(s))
+                                return ctx.Request.Path.Value.Substring(s.Length);
+                            else
+                                return ctx.Request.Path.Value;
+                        },
                         () => ctx.Request.Path.Value);
+        }
+
+        private static PartialHttpHandler handlerWithRootedPath(string path)
+        {
+            return PartialHttpHandler.FromFunc(async (next, ctx) =>
+            {
+                var saved = GetSavedSubPath(ctx);
+                ctx.Items[RouteKey] = saved.OrDefault("") + path;
+
+                var result = await next.Invoke(ctx);
+
+                result.Match(r => { }, () =>
+                {
+                    saved.Match(s => ctx.Items[RouteKey] = s, () => ctx.Items.Remove(RouteKey));
+                });
+
+                return result;
+            });
         }
 
         public static PartialHttpHandler route(string path)
@@ -152,6 +183,26 @@ namespace Koala
             return route(path).WithNext(next);
         }
 
+        public static PartialHttpHandler routeStartsWith(string path)
+        {
+            return PartialHttpHandler.FromFunc(async (next, ctx) =>
+            {
+                var currentPath = GetPath(ctx);
+                if (currentPath.StartsWith(path))
+                    return await next.Invoke(ctx);
+                return ValueOption.None;
+            });
+        }
+
+        public static HttpHandler routeStartsWith(string path, HttpHandler next)
+        {
+            return routeStartsWith(path).WithNext(next);
+        }
+
+        public static HttpHandler subRoute(string path, HttpHandler next)
+        {
+            return routeStartsWith(path, handlerWithRootedPath(path).WithNext(next));
+        }
 
         private static (string user, string pw)? ReadBasicAuth(HttpContext ctx)
         {

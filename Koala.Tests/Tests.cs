@@ -61,7 +61,7 @@ namespace Koala.Tests
                    .Build();
             return webHost;
         }
-        
+
         private static IEnumerable<Test> DiscoverTestMethods<T>()
         {
             var t = typeof(T);
@@ -143,7 +143,7 @@ namespace Koala.Tests
                 PAssert.That(() => content == "Welcome Agent Bond!");
             }
         }
-        
+
         //public static void GiraffeSample()
         //{
         //    // The function to validate credentials.
@@ -293,6 +293,115 @@ namespace Koala.Tests
                 httpClient.DefaultRequestHeaders.Add("Accept", "application/xml");
                 var x = await httpClient.GetAsync($"http://localhost:{port}/api/value");
                 PAssert.That(() => x.StatusCode == HttpStatusCode.NoContent);
+            }
+        }
+
+        [Tests]
+        public static async Task json_null()
+        {
+            var handler = GET(route("/api/value", serialize_json(null)));
+
+            using (var webHost = WebHostFromKoalaHandler(Array.Empty<string>(), 0, handler))
+            {
+                webHost.Start();
+                var port = new Uri(webHost.ServerFeatures.Get<IServerAddressesFeature>().Addresses.First()).Port;
+
+                var httpClient = new HttpClient();
+                httpClient.DefaultRequestHeaders.Add("Accept", "application/xml");
+                var x = await httpClient.GetAsync($"http://localhost:{port}/api/value");
+                PAssert.That(() => x.StatusCode == HttpStatusCode.OK);
+                var content = await x.Content.ReadAsStringAsync();
+                PAssert.That(() => JsonConvert.DeserializeObject(content) == null);
+            }
+        }
+
+        [Tests]
+        public static async Task json_string()
+        {
+            var handler = GET(route("/api/value", serialize_json("hello world")));
+
+            using (var webHost = WebHostFromKoalaHandler(Array.Empty<string>(), 0, handler))
+            {
+                webHost.Start();
+                var port = new Uri(webHost.ServerFeatures.Get<IServerAddressesFeature>().Addresses.First()).Port;
+
+                var httpClient = new HttpClient();
+                httpClient.DefaultRequestHeaders.Add("Accept", "application/xml");
+                var x = await httpClient.GetAsync($"http://localhost:{port}/api/value");
+                PAssert.That(() => x.StatusCode == HttpStatusCode.OK);
+                var content = await x.Content.ReadAsStringAsync();
+                PAssert.That(() => "hello world".Equals(JsonConvert.DeserializeObject(content)));
+            }
+        }
+
+        [Tests]
+        public static async Task json_anonymous()
+        {
+            var obj = new { a = 1, b = "2", c = DateTime.Now, d = new { e = 0.3, f = 0.2 } };
+            var handler = GET(route("/api/value", serialize_json(obj)));
+
+            using (var webHost = WebHostFromKoalaHandler(Array.Empty<string>(), 0, handler))
+            {
+                webHost.Start();
+                var port = new Uri(webHost.ServerFeatures.Get<IServerAddressesFeature>().Addresses.First()).Port;
+
+                var httpClient = new HttpClient();
+                httpClient.DefaultRequestHeaders.Add("Accept", "application/xml");
+                var x = await httpClient.GetAsync($"http://localhost:{port}/api/value");
+                PAssert.That(() => x.StatusCode == HttpStatusCode.OK);
+                var content = await x.Content.ReadAsStringAsync();
+                PAssert.That(() => obj.Equals(JsonConvert.DeserializeAnonymousType(content, obj)));
+            }
+        }
+
+        [Tests]
+        public static async Task SubRoute()
+        {
+            var handler =
+                GET(
+                    choose(
+                        route("/", text("root")),
+                        subRoute("/api",
+                            choose(
+                                route("/a", text("a")),
+                                route("/b", text("b")))),
+                        route("/api/c", text("c"))
+                        ));
+
+            using (var webHost = WebHostFromKoalaHandler(Array.Empty<string>(), 0, handler))
+            {
+                webHost.Start();
+                var port = new Uri(webHost.ServerFeatures.Get<IServerAddressesFeature>().Addresses.First()).Port;
+
+                var httpClient = new HttpClient();
+
+                {
+                    var x = await httpClient.GetAsync($"http://localhost:{port}/");
+                    PAssert.That(() => x.StatusCode == HttpStatusCode.OK);
+                    var content = await x.Content.ReadAsStringAsync();
+                    PAssert.That(() => content == "root");
+                }
+
+                {
+                    var x = await httpClient.GetAsync($"http://localhost:{port}/api/a");
+                    PAssert.That(() => x.StatusCode == HttpStatusCode.OK);
+                    var content = await x.Content.ReadAsStringAsync();
+                    PAssert.That(() => content == "a");
+                }
+
+                {
+                    var x = await httpClient.GetAsync($"http://localhost:{port}/api/b");
+                    PAssert.That(() => x.StatusCode == HttpStatusCode.OK);
+                    var content = await x.Content.ReadAsStringAsync();
+                    PAssert.That(() => content == "b");
+                }
+
+                {
+                    var x = await httpClient.GetAsync($"http://localhost:{port}/api/c");
+                    PAssert.That(() => x.StatusCode == HttpStatusCode.OK);
+                    var content = await x.Content.ReadAsStringAsync();
+                    PAssert.That(() => content == "c");
+                }
             }
         }
     }

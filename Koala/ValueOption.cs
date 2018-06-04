@@ -43,5 +43,33 @@ namespace Koala
             else
                 return onNone;
         }
+
+        public void Match(Action<T> onSome, Action onNone)
+        {
+            if (this.IsSome)
+                onSome(Value);
+            else
+                onNone();
+        }
+
+        public void IfSome(Action<T> onSome)
+        {
+            if (this.IsSome)
+                onSome(Value);
+        }
+
+        public ValueOption<TResult> Map<TResult>(Func<T, TResult> map)
+        {
+            if (IsSome)
+                return ValueOption.Some(map(Value));
+            return ValueOption.None;
+        }
+
+        public T OrDefault(T def)
+        {
+            if (IsNone)
+                return def;
+            return Value;
+        }
     }
 }
