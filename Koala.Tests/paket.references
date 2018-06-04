@@ -5,7 +5,6 @@ Microsoft.AspNetCore.HttpsPolicy
 Microsoft.AspNetCore.Mvc.Formatters.Xml
 
 #xunit
+#xunit.runner.visualstudio
 Expecto
-expecto.xunit
-xunit.runner.visualstudio
 ExpressionToCodeLib
