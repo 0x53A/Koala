@@ -14,13 +14,18 @@ using Microsoft.AspNetCore.Hosting.Server.Features;
 using System.Linq;
 using System.Collections.Generic;
 using System.Reflection;
+using System.Net.Http.Headers;
+using System.Text;
+using System.Net;
 
 namespace Koala.Tests
 {
     public class TestClass
     {
-        [Expecto.XUnit.ExpectoBridge]
-        public void __dummy() { }
+        public static void Main(string[] args)
+        {
+            Runner.RunTestsInAssembly(Impl.ExpectoConfig.defaultConfig, args);
+        }
 
         private static IWebHost WebHostFromKoalaHandler(string[] args, int port, HttpHandler handler)
         {
@@ -56,14 +61,7 @@ namespace Koala.Tests
                    .Build();
             return webHost;
         }
-
-        public static void Main(string[] args)
-        {
-            Expecto.CSharp.Runner.RunTestsInAssembly(Expecto.Impl.ExpectoConfig.defaultConfig, args);
-            Console.ReadLine();
-        }
-
-
+        
         private static IEnumerable<Test> DiscoverTestMethods<T>()
         {
             var t = typeof(T);
@@ -80,36 +78,25 @@ namespace Koala.Tests
                 else if (m.GetCustomAttribute<PTestsAttribute>() != null)
                 {
                     if (isTaskReturning)
-                        yield return Runner.PendingTestCase(m.Name, () => (Task) m.Invoke(null, Array.Empty<object>()));
+                        yield return Runner.PendingTestCase(m.Name, () => (Task)m.Invoke(null, Array.Empty<object>()));
                     else
                         yield return Runner.PendingTestCase(m.Name, () => m.Invoke(null, Array.Empty<object>()));
                 }
                 else if (m.GetCustomAttribute<TestsAttribute>() != null)
                 {
                     if (isTaskReturning)
-                        yield return Runner.TestCase(m.Name, () => (Task) m.Invoke(null, Array.Empty<object>()));
+                        yield return Runner.TestCase(m.Name, () => (Task)m.Invoke(null, Array.Empty<object>()));
                     else
-                    yield return Runner.TestCase(m.Name, () => m.Invoke(null, Array.Empty<object>()));
+                        yield return Runner.TestCase(m.Name, () => m.Invoke(null, Array.Empty<object>()));
                 }
             }
         }
 
         [Tests]
-        public static Test Tests =
-            Runner.TestList("general groupings", /*new Test[] {
-                Runner.TestCase("basic auth", () => TestBasicAuth()),
-                Runner.TestCase("content negotiation - default", () => ConNeg_default()),
-                Runner.TestCase("content negotiation - json", () => ConNeg_json()),
-                Runner.TestCase("content negotiation - xml", () => ConNeg_xml()),
-                Runner.TestCase("content negotiation - null - default", () => Conneg_null_default()),
-                Runner.TestCase("content negotiation - null - json", () => Conneg_null_json()),
-                Runner.TestCase("content negotiation - null - xml", () => ConNeg_null_xml()),
-}*/
-                DiscoverTestMethods<TestClass>()
-            );
+        public static Test Tests = Runner.TestList("TestClass", DiscoverTestMethods<TestClass>());
 
         [Tests]
-        public static void TestBasicAuth()
+        public static async Task TestBasicAuth()
         {
             // The function to validate credentials.
             // Normally you would hash the password and compare it against a database or whatever.
@@ -137,41 +124,56 @@ namespace Koala.Tests
                 // without header it should fail
                 var client = new HttpClient();
                 client.BaseAddress = new Uri($"http://localhost:{port}/");
+
+                var result = await client.GetAsync("/protected");
+                PAssert.That(() => result.StatusCode == HttpStatusCode.Unauthorized);
+                PAssert.That(() => result.Headers.WwwAuthenticate.Any(w => w.Scheme == "Basic"));
+
+                // with the wrong credentials, it should also 403
+                client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Basic", Convert.ToBase64String(Encoding.UTF8.GetBytes("Goldeneye:big-laser")));
+                result = await client.GetAsync("/protected");
+                PAssert.That(() => result.StatusCode == HttpStatusCode.Unauthorized);
+                PAssert.That(() => result.Headers.WwwAuthenticate.Any(w => w.Scheme == "Basic"));
+
+                // with the correct credentials, it should return the value
+                client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Basic", Convert.ToBase64String(Encoding.UTF8.GetBytes("Bond:007")));
+                result = await client.GetAsync("/protected");
+                PAssert.That(() => result.StatusCode == HttpStatusCode.OK);
+                var content = await result.Content.ReadAsStringAsync();
+                PAssert.That(() => content == "Welcome Agent Bond!");
             }
         }
+        
+        //public static void GiraffeSample()
+        //{
+        //    // The function to validate credentials.
+        //    bool authenticator((string user, string pw) credentials)
+        //    {
+        //        // Normally you would hash the password and compare it against a database or whatever.
+        //        // Here it is just checked against a hardcoded value.
+        //        return credentials == ("Bond", "007");
+        //    }
 
-        [Tests]
-        public static void GiraffeSample()
-        {
-            // The function to validate credentials.
-            bool authenticator((string user, string pw) credentials)
-            {
-                // Normally you would hash the password and compare it against a database or whatever.
-                // Here it is just checked against a hardcoded value.
-                return credentials == ("Bond", "007");
-            }
+        //    var handler =
+        //        choose(new[]
+        //        {
+        //          GET(
+        //            choose(new[]
+        //            {
+        //                route("/", text("Hello World!")),
 
-            var handler =
-                choose(new[]
-                {
-                  GET(
-                    choose(new[]
-                    {
-                        route("/", text("Hello World!")),
+        //                // show how handlers can be combined, and how easily a new handler can be created from these building blocks.
+        //                route("/protected", basicAuth(authenticator, HttpHandler.Wrap(ctx => text($"Welcome Agent {ctx.User.Identity.Name}!"))))
 
-                        // show how handlers can be combined, and how easily a new handler can be created from these building blocks.
-                        route("/protected", basicAuth(authenticator, HttpHandler.Wrap(ctx => text($"Welcome Agent {ctx.User.Identity.Name}!"))))
+        //            })),
 
-                    })),
-
-                  route("/api",
-                    choose(new[]{
-                        GET(route("/time", HttpHandler.Wrap(ctx => text($"{DateTime.Now}")))),
-                        POST(route("/ping", text("pong")))
-                  }))
-                });
-
-        }
+        //          route("/api",
+        //            choose(new[]{
+        //                GET(route("/time", HttpHandler.Wrap(ctx => text($"{DateTime.Now}")))),
+        //                POST(route("/ping", text("pong")))
+        //          }))
+        //        });
+        //}
 
         [Tests]
         public static async Task ConNeg_default()
@@ -214,6 +216,7 @@ namespace Koala.Tests
             }
         }
 
+        // xml can't (de)serialize anonymous objects
         public class DataObject
         {
             public int X { get; set; }
@@ -255,7 +258,7 @@ namespace Koala.Tests
 
                 var httpClient = new HttpClient();
                 var x = await httpClient.GetAsync($"http://localhost:{port}/api/value");
-                PAssert.That(() => x.StatusCode == System.Net.HttpStatusCode.NoContent);
+                PAssert.That(() => x.StatusCode == HttpStatusCode.NoContent);
             }
         }
 
@@ -272,7 +275,7 @@ namespace Koala.Tests
                 var httpClient = new HttpClient();
                 httpClient.DefaultRequestHeaders.Add("Accept", "application/json");
                 var x = await httpClient.GetAsync($"http://localhost:{port}/api/value");
-                PAssert.That(() => x.StatusCode == System.Net.HttpStatusCode.NoContent);
+                PAssert.That(() => x.StatusCode == HttpStatusCode.NoContent);
             }
         }
 
@@ -289,7 +292,7 @@ namespace Koala.Tests
                 var httpClient = new HttpClient();
                 httpClient.DefaultRequestHeaders.Add("Accept", "application/xml");
                 var x = await httpClient.GetAsync($"http://localhost:{port}/api/value");
-                PAssert.That(() => x.StatusCode == System.Net.HttpStatusCode.NoContent);
+                PAssert.That(() => x.StatusCode == HttpStatusCode.NoContent);
             }
         }
     }
