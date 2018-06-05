@@ -17,6 +17,7 @@ using System.Reflection;
 using System.Net.Http.Headers;
 using System.Text;
 using System.Net;
+using Microsoft.AspNetCore.Builder;
 
 namespace Koala.Tests
 {
@@ -53,6 +54,10 @@ namespace Koala.Tests
                        //}
 
                        app.AddKoala(handler);
+                       //app.UseMvc(route =>
+                       //{
+
+                       //});
                    })
                    .UseKestrel(c =>
                    {
@@ -370,6 +375,89 @@ namespace Koala.Tests
                     PAssert.That(() => x.StatusCode == HttpStatusCode.OK);
                     var content = await x.Content.ReadAsStringAsync();
                     PAssert.That(() => content == "c");
+                }
+            }
+        }
+
+        // https://docs.microsoft.com/en-us/aspnet/core/tutorials/first-mvc-app/adding-controller?view=aspnetcore-2.1
+        public class HelloWorldController : Controller
+        {
+            // 
+            // GET: /HelloWorld/
+
+            public string Index()
+            {
+                return "This is my default action...";
+            }
+
+            // 
+            // GET: /HelloWorld/Welcome/ 
+
+            public string Welcome()
+            {
+                return "This is the Welcome action method...";
+            }
+        }
+        
+        [Route("api/[controller]")]
+        [ApiController]
+        public class TodoController : ControllerBase
+        {
+            public string Get()
+            {
+                return "Get";
+            }
+
+            [HttpGet("Item1")]
+            public ActionResult<string> Asd()
+            {
+                return "Item1";
+            }
+
+            [HttpGet("Item2")]
+            public ActionResult<string> Xyz()
+            {
+                return "Item2";
+            }
+
+            [HttpGet("Item3/{i}")]
+            public string Foo(int i)
+            {
+                return $"Foo{i}";
+            }
+        }
+
+        [Tests]
+        public static async Task RouteToController()
+        {
+            var handler = GET(subRoute("/Myapi/MyTodo", to_api_controller<TodoController>("/api/ToDo")));
+
+            using (var webHost = WebHostFromKoalaHandler(Array.Empty<string>(), 0, handler))
+            {
+                webHost.Start();
+                var port = new Uri(webHost.ServerFeatures.Get<IServerAddressesFeature>().Addresses.First()).Port;
+
+                var httpClient = new HttpClient();
+
+                {
+                    var x = await httpClient.GetAsync($"http://localhost:{port}/Myapi/MyTodo/Item1");
+                    PAssert.That(() => x.StatusCode == HttpStatusCode.OK);
+                    var content = await x.Content.ReadAsStringAsync();
+                    PAssert.That(() => content == "Item1");
+                }
+
+                {
+                    var x = await httpClient.GetAsync($"http://localhost:{port}/Myapi/MyTodo/Item2");
+                    PAssert.That(() => x.StatusCode == HttpStatusCode.OK);
+                    var content = await x.Content.ReadAsStringAsync();
+                    PAssert.That(() => content == "Item2");
+                }
+
+                {
+                    var x = await httpClient.GetAsync($"http://localhost:{port}/Myapi/MyTodo/Item3/5");
+                    PAssert.That(() => x.StatusCode == HttpStatusCode.OK);
+                    var content = await x.Content.ReadAsStringAsync();
+                    PAssert.That(() => content == "Foo5");
                 }
             }
         }
