@@ -13,6 +13,10 @@ Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Koala", "Koala\Koala.csproj
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Koala.Tests", "Koala.Tests\Koala.Tests.csproj", "{5DA4AD9A-4CB4-4F6D-B8E0-4B744802E1F2}"
 EndProject
+Project("{F2A71F9B-5D33-465A-A702-920D77279786}") = "Koala.Giraffe", "Koala.Giraffe\Koala.Giraffe.fsproj", "{36C87D6B-2621-4774-82D3-F0B11C5FC78F}"
+EndProject
+Project("{F2A71F9B-5D33-465A-A702-920D77279786}") = "Koala.Giraffe.Tests", "Koala.Giraffe.Tests\Koala.Giraffe.Tests.fsproj", "{380FC2EF-1254-47CB-9B66-E6C44E545562}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -27,6 +31,14 @@ Global
 		{5DA4AD9A-4CB4-4F6D-B8E0-4B744802E1F2}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{5DA4AD9A-4CB4-4F6D-B8E0-4B744802E1F2}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{5DA4AD9A-4CB4-4F6D-B8E0-4B744802E1F2}.Release|Any CPU.Build.0 = Release|Any CPU
+		{36C87D6B-2621-4774-82D3-F0B11C5FC78F}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{36C87D6B-2621-4774-82D3-F0B11C5FC78F}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{36C87D6B-2621-4774-82D3-F0B11C5FC78F}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{36C87D6B-2621-4774-82D3-F0B11C5FC78F}.Release|Any CPU.Build.0 = Release|Any CPU
+		{380FC2EF-1254-47CB-9B66-E6C44E545562}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{380FC2EF-1254-47CB-9B66-E6C44E545562}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{380FC2EF-1254-47CB-9B66-E6C44E545562}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{380FC2EF-1254-47CB-9B66-E6C44E545562}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

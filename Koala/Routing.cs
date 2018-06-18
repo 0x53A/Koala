@@ -14,10 +14,8 @@ using System.Security.Claims;
 using Microsoft.AspNetCore.Mvc.Internal;
 using System.Reflection;
 using Microsoft.AspNetCore.Mvc.ApplicationModels;
-using System.Collections.Immutable;
 using Microsoft.AspNetCore.Mvc.Abstractions;
 using Microsoft.AspNetCore.Routing.Template;
-using Microsoft.AspNetCore.Mvc.Internal;
 
 namespace Koala
 {
