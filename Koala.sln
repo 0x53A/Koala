@@ -3,19 +3,13 @@ Microsoft Visual Studio Solution File, Format Version 12.00
 # Visual Studio 15
 VisualStudioVersion = 15.0.27705.2000
 MinimumVisualStudioVersion = 10.0.40219.1
-Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = ".paket", ".paket", "{CD76874C-5850-4B79-9E67-ED2CF65A1694}"
-	ProjectSection(SolutionItems) = preProject
-		paket.dependencies = paket.dependencies
-		paket.lock = paket.lock
-	EndProjectSection
-EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Koala", "Koala\Koala.csproj", "{5A380B6C-373D-4F17-AAA8-2C8F3A91F079}"
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Koala.Tests", "Koala.Tests\Koala.Tests.csproj", "{5DA4AD9A-4CB4-4F6D-B8E0-4B744802E1F2}"
 EndProject
-Project("{F2A71F9B-5D33-465A-A702-920D77279786}") = "Koala.Giraffe", "Koala.Giraffe\Koala.Giraffe.fsproj", "{36C87D6B-2621-4774-82D3-F0B11C5FC78F}"
+Project("{6EC3EE1D-3C4E-46DD-8F32-0CC8E7565705}") = "Koala.Giraffe", "Koala.Giraffe\Koala.Giraffe.fsproj", "{36C87D6B-2621-4774-82D3-F0B11C5FC78F}"
 EndProject
-Project("{F2A71F9B-5D33-465A-A702-920D77279786}") = "Koala.Giraffe.Tests", "Koala.Giraffe.Tests\Koala.Giraffe.Tests.fsproj", "{380FC2EF-1254-47CB-9B66-E6C44E545562}"
+Project("{6EC3EE1D-3C4E-46DD-8F32-0CC8E7565705}") = "Koala.Giraffe.Tests", "Koala.Giraffe.Tests\Koala.Giraffe.Tests.fsproj", "{380FC2EF-1254-47CB-9B66-E6C44E545562}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution

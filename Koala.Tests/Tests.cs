@@ -25,7 +25,8 @@ namespace Koala.Tests
     {
         public static void Main(string[] args)
         {
-            Runner.RunTestsInAssembly(Impl.ExpectoConfig.defaultConfig, args);
+            var tests = Runner.TestList("TestClass", DiscoverTestMethods<TestClass>());
+            Runner.RunTestsWithArgs(Impl.ExpectoConfig.defaultConfig, args, tests);
         }
 
         private static IWebHost WebHostFromKoalaHandler(string[] args, int port, HttpHandler handler)
@@ -96,9 +97,6 @@ namespace Koala.Tests
                 }
             }
         }
-
-        [Tests]
-        public static Test Tests = Runner.TestList("TestClass", DiscoverTestMethods<TestClass>());
 
         [Tests]
         public static async Task TestBasicAuth()
@@ -398,7 +396,7 @@ namespace Koala.Tests
                 return "This is the Welcome action method...";
             }
         }
-        
+
         [Route("api/[controller]")]
         [ApiController]
         public class TodoController : ControllerBase

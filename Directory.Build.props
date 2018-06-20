@@ -1,0 +1,24 @@
+<Project>
+
+  <PropertyGroup>
+    <LangVersion>7.3</LangVersion>
+
+    <DisableImplicitFSharpCoreReference>true</DisableImplicitFSharpCoreReference>
+    <DisableImplicitSystemValueTupleReference>true</DisableImplicitSystemValueTupleReference>
+
+    <Authors>0x53A</Authors>
+    <Company>0x53A</Company>
+    <Description>Functional routing for ASP.NET Core C#.</Description>
+    <PackageProjectUrl>https://github.com/0x53A/Koala</PackageProjectUrl>
+    <RepositoryUrl>https://github.com/0x53A/Koala.git</RepositoryUrl>
+    <RepositoryType>git</RepositoryType>
+    <PackageTags>asp.net core;</PackageTags>
+
+    <_Version>0.0.4</_Version>
+    
+    <Version>$(_Version)-local</Version>
+    <Version Condition=" '$(CI_PIPELINE_IID)' != '' ">$(_Version)-gitlab.$(CI_PIPELINE_IID)</Version>
+    <Version Condition=" '$(CI_PIPELINE_IID)' != '' AND '$(CI_REF)' == 'release' ">$(_Version)</Version>
+  </PropertyGroup>
+  
+</Project>

@@ -1,7 +1,0 @@
-Microsoft.AspNetCore.Server.Kestrel
-Microsoft.AspNetCore.Mvc
-Microsoft.AspNetCore
-Microsoft.AspNetCore.HttpsPolicy
-Microsoft.AspNetCore.Mvc.Formatters.Xml
-Expecto
-ExpressionToCodeLib

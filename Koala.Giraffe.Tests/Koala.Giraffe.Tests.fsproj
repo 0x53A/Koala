@@ -1,18 +1,24 @@
 ﻿<?xml version="1.0" encoding="utf-8"?>
 <Project Sdk="Microsoft.NET.Sdk">
+  
   <PropertyGroup>
     <OutputType>Exe</OutputType>
     <TargetFramework>netcoreapp2.0</TargetFramework>
   </PropertyGroup>
+  
   <ItemGroup>
     <Compile Include="Program.fs" />
   </ItemGroup>
+  
   <ItemGroup>
-    <None Include="paket.references" />
+    <PackageReference Include="Expecto" Version="8.2.0" />
+    <PackageReference Include="Giraffe" Version="1.1.0" />
+    <PackageReference Include="Unquote" Version="4.0.0" />
   </ItemGroup>
+  
   <ItemGroup>
     <ProjectReference Include="..\Koala.Giraffe\Koala.Giraffe.fsproj" />
     <ProjectReference Include="..\Koala\Koala.csproj" />
   </ItemGroup>
-  <Import Project="..\.paket\Paket.Restore.targets" />
+    
 </Project>

@@ -1,16 +1,14 @@
 ﻿<?xml version="1.0" encoding="utf-8"?>
 <Project Sdk="Microsoft.NET.Sdk">
+  
   <PropertyGroup>
     <TargetFrameworks>netstandard2.0</TargetFrameworks> <!-- net461 -->
-    <LangVersion>7.3</LangVersion>
-    <Version>0.0.3</Version>
-    <Authors>0x53A</Authors>
-    <Company>0x53A</Company>
-    <Description>Functional routing for ASP.NET Core C#.</Description>
-    <PackageProjectUrl>https://github.com/0x53A/Koala</PackageProjectUrl>
-    <RepositoryUrl>https://github.com/0x53A/Koala.git</RepositoryUrl>
-    <RepositoryType>git</RepositoryType>
-    <PackageTags>asp.net core;</PackageTags>
   </PropertyGroup>
-  <Import Project="..\.paket\Paket.Restore.targets" />
+  
+  <ItemGroup>
+    <PackageReference Include="Microsoft.AspNetCore" Version="2.1.2" />
+    <PackageReference Include="Microsoft.AspNetCore.Mvc.Core" Version="2.1.1" />
+    <PackageReference Include="Microsoft.AspNetCore.Mvc.Razor" Version="2.1.1" />
+  </ItemGroup>
+  
 </Project>
