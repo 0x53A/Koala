@@ -16,6 +16,12 @@ using System.Reflection;
 using Microsoft.AspNetCore.Mvc.ApplicationModels;
 using Microsoft.AspNetCore.Mvc.Abstractions;
 using Microsoft.AspNetCore.Routing.Template;
+using Microsoft.AspNetCore.Hosting;
+using System.IO;
+using Microsoft.AspNetCore.Mvc.ViewFeatures;
+using Microsoft.AspNetCore.Mvc.Razor;
+using Microsoft.AspNetCore.Mvc.Rendering;
+using Microsoft.AspNetCore.Mvc.ModelBinding;
 
 namespace Koala
 {
@@ -165,6 +171,37 @@ namespace Koala
             });
         }
 
+        public static HttpHandler html(string content)
+        {
+            return HttpHandler.FromFunc(async ctx =>
+            {
+                SetContentType(ctx, "text/html; charset=utf-8");
+                await WriteUtf8StringToResponse(content, ctx);
+                return ValueOption.Some(ctx);
+            });
+        }
+
+        public static HttpHandler content_file(string contentType, string path = null)
+        {
+            return HttpHandler.FromFunc(async ctx =>
+            {
+                var env = ctx.RequestServices.GetRequiredService<IHostingEnvironment>();
+                var relativePath = path ?? ctx.Request.Path.ToString();
+                var absolutePath = env.WebRootFileProvider.GetFileInfo(relativePath.Trim('\\', '/').Replace('/', '\\')).PhysicalPath;
+                // todo: this could be optimized by opening the file as a stream and streaming the bytes directly.
+                // Care would need to be taken that the file is utf8 on disk (or re-encoded on the fly)
+                var content = File.ReadAllText(absolutePath);
+                SetContentType(ctx, contentType);
+                await WriteUtf8StringToResponse(content, ctx);
+                return ValueOption.Some(ctx);
+            });
+        }
+
+        public static HttpHandler html_file(string path = null)
+        {
+            return content_file("text/html; charset=utf-8", path);
+        }
+
 
         // --------------------------------------------------------------------------------------
         // Handlers: Interop
@@ -213,6 +250,77 @@ namespace Koala
                 var fac = new ActionInvokerFactory(new[] { actionInvokerProvider });
                 IActionInvoker invoker = fac.CreateInvoker(actx);
                 await invoker.InvokeAsync();
+                return ValueOption.Some(ctx);
+            });
+        }
+
+
+        // --------------------------------------------------------------------------------------
+        // Handlers: Rendering
+
+        private static RouteData ExtractRouteData(string path)
+        {
+            var segments = (path ?? "").Split('\\', '/').Reverse().ToArray();
+
+            var routeData = new RouteData();
+
+            for (int i = 0; i < segments.Length; i++)
+            {
+                var v = segments[i];
+
+                if (i == 0)
+                    routeData.Values.Add("action", v);
+                else if (i == 1)
+                    routeData.Values.Add("controller", v);
+                else if (i == 2)
+                    routeData.Values.Add("area", v);
+                else
+                    routeData.Values.Add($"token-{i + 1}", v);
+            }
+            return routeData;
+        }
+
+
+        private static async Task<string> RenderView<TModel>(IRazorViewEngine razorViewEngine, ITempDataProvider tempDataProvider, HttpContext httpContext, string viewName, TModel model)
+        {
+            var routeData = ExtractRouteData(viewName);
+            var templateName = routeData.Values["action"].ToString();
+
+            var actionContext = new ActionContext(httpContext, routeData, new ActionDescriptor());
+            var viewEngineResult = razorViewEngine.FindView(actionContext, templateName, true);
+
+            if (false == viewEngineResult.Success)
+            {
+                // fail
+                var locations = String.Join(" ", viewEngineResult.SearchedLocations);
+                throw new Exception($"Could not find view with the name '{templateName}'. Looked in {locations}.");
+
+            }
+            else // Success
+            {
+                var view = viewEngineResult.View;
+                var viewDataDict = new ViewDataDictionary<TModel>(new EmptyModelMetadataProvider(), new ModelStateDictionary()) { Model = model };
+                var tempDataDict = new TempDataDictionary(actionContext.HttpContext, tempDataProvider);
+                var htmlHelperOptions = new HtmlHelperOptions();
+                using (var output = new StringWriter())
+                {
+                    var viewContext = new ViewContext(actionContext, view, viewDataDict, tempDataDict, output, htmlHelperOptions);
+                    await view.RenderAsync(viewContext);
+                    return output.ToString();
+                }
+            }
+        }
+
+        public static HttpHandler to_razor_view<TModel>(string viewName, TModel model, string contentType = "text/html")
+        {
+            return HttpHandler.FromFunc(async ctx =>
+            {
+                var engine = ctx.RequestServices.GetService<IRazorViewEngine>();
+                var tempDataProvider = ctx.RequestServices.GetService<ITempDataProvider>();
+                var output = await RenderView(engine, tempDataProvider, ctx, viewName, model);
+                var bytes = Encoding.UTF8.GetBytes(output);
+                SetContentType(ctx, contentType);
+                await WriteUtf8StringToResponse(output, ctx);
                 return ValueOption.Some(ctx);
             });
         }
