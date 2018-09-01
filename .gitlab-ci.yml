@@ -14,8 +14,8 @@ build_job:
 deploy_job:
   stage: deploy
   only:
-	- master
-	- release
+    - master
+    - release
   script:
     - ./ci.sh
 
