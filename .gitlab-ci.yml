@@ -13,7 +13,9 @@ build_job:
 
 deploy_job:
   stage: deploy
-  #when: manual
+  only:
+	- master
+	- release
   script:
     - ./ci.sh
 
