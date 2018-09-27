@@ -14,7 +14,7 @@
     <RepositoryType>git</RepositoryType>
     <PackageTags>asp.net core;</PackageTags>
 
-    <_Version>0.0.4</_Version>
+    <_Version>0.0.5</_Version>
     
     <Version>$(_Version)-local</Version>
     <Version Condition=" '$(CI_PIPELINE_IID)' != '' ">$(_Version)-gitlab.$(CI_PIPELINE_IID)</Version>
