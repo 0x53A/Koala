@@ -11,6 +11,12 @@ build_job:
     - dotnet build -c Release
     - dotnet run --project Koala.Tests/Koala.Tests.csproj -c Release -f netcoreapp2.1
 
+  artifacts:
+    reports:
+      junit:
+        - **/*.junit.xml
+
+
 deploy_job:
   stage: deploy
   only:
