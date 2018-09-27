@@ -23,10 +23,10 @@ namespace Koala.Tests
 {
     public class TestClass
     {
-        public static void Main(string[] args)
+        public static int Main(string[] args)
         {
             var tests = Runner.TestList("TestClass", DiscoverTestMethods<TestClass>());
-            Runner.RunTestsWithArgs(Impl.ExpectoConfig.defaultConfig, args, tests);
+            return Runner.RunTestsWithArgs(Impl.ExpectoConfig.defaultConfig, args, tests);
         }
 
         private static IWebHost WebHostFromKoalaHandler(string[] args, int port, HttpHandler handler)
