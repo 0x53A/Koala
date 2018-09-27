@@ -4,9 +4,12 @@
   <PropertyGroup>
     <OutputType>Exe</OutputType>
     <TargetFramework>netcoreapp2.0</TargetFramework>
+    <SignAssembly>true</SignAssembly>
+    <AssemblyOriginatorKeyFile>sn.snk</AssemblyOriginatorKeyFile>
   </PropertyGroup>
   
   <ItemGroup>
+    <None Include="sn.snk" />
     <Compile Include="Program.fs" />
   </ItemGroup>
   

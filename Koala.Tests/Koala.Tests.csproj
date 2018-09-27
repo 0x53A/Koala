@@ -4,6 +4,8 @@
   <PropertyGroup>
     <TargetFrameworks>netcoreapp2.0;netcoreapp2.1</TargetFrameworks> <!-- ;net461 -->
     <OutputType>Exe</OutputType>
+    <SignAssembly>true</SignAssembly>
+    <AssemblyOriginatorKeyFile>sn.snk</AssemblyOriginatorKeyFile>
   </PropertyGroup>
   
   <ItemGroup>
