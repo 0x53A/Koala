@@ -14,7 +14,7 @@ build_job:
   artifacts:
     reports:
       junit:
-        - **/*.junit.xml
+        - *.junit.xml
 
 
 deploy_job:
