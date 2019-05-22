@@ -8,19 +8,19 @@ module Interop =
     let wrap_koala_as_func(handler:Koala.HttpHandler) : Giraffe.Core.HttpFunc =
         fun ctx -> task {
             let! result = handler.Invoke(ctx)
-            if result.IsNone then
+            if not result then
                 return None
             else
-                return Some result.Value
+                return Some ctx
         }
 
     let wrap_koala(handler:Koala.HttpHandler) : Giraffe.Core.HttpHandler =
         fun next ctx -> task {
             let! result = handler.Invoke(ctx)
-            if result.IsNone then
+            if not result then
                 return! next ctx
             else
-                return Some result.Value
+                return Some ctx
         }
 
     let wrap_giraffe(handler:Giraffe.Core.HttpFunc, next:Koala.HttpHandler) : Koala.HttpHandler =
@@ -29,7 +29,7 @@ module Interop =
                 let! result = handler ctx
                 return
                     match result with
-                    | Some v -> ValueOption.Some v
-                    | None -> ValueOption.op_Implicit ValueOption.None
+                    | Some v -> true
+                    | None -> false
             }
         }

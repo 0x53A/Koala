@@ -6,19 +6,19 @@ namespace Koala
 {
     public abstract class PartialHttpHandler
     {
-        public abstract Task<ValueOption<HttpContext>> Invoke(HttpHandler next, HttpContext ctx);
+        public abstract Task<bool> Invoke(HttpHandler next, HttpContext ctx);
         public abstract HttpHandler WithNext(HttpHandler next);
 
         private sealed class FuncPartialHttpHandler : PartialHttpHandler
         {
-            private readonly Func<HttpHandler, HttpContext, Task<ValueOption<HttpContext>>> _f;
+            private readonly Func<HttpHandler, HttpContext, Task<bool>> _f;
 
-            public FuncPartialHttpHandler(Func<HttpHandler, HttpContext, Task<ValueOption<HttpContext>>> f)
+            public FuncPartialHttpHandler(Func<HttpHandler, HttpContext, Task<bool>> f)
             {
                 _f = f;
             }
 
-            public override Task<ValueOption<HttpContext>> Invoke(HttpHandler next, HttpContext ctx)
+            public override Task<bool> Invoke(HttpHandler next, HttpContext ctx)
             {
                 return _f(next, ctx);
             }
@@ -29,7 +29,7 @@ namespace Koala
             }
         }
 
-        public static PartialHttpHandler FromFunc(Func<HttpHandler, HttpContext, Task<ValueOption<HttpContext>>> f)
+        public static PartialHttpHandler FromFunc(Func<HttpHandler, HttpContext, Task<bool>> f)
         {
             return new FuncPartialHttpHandler(f);
         }
@@ -49,24 +49,24 @@ namespace Koala
 
     public abstract class HttpHandler
     {
-        public abstract Task<ValueOption<HttpContext>> Invoke(HttpContext ctx);
+        public abstract Task<bool> Invoke(HttpContext ctx);
 
         private sealed class FuncHttpHandler : HttpHandler
         {
-            private readonly Func<HttpContext, Task<ValueOption<HttpContext>>> _f;
+            private readonly Func<HttpContext, Task<bool>> _f;
 
-            public FuncHttpHandler(Func<HttpContext, Task<ValueOption<HttpContext>>> f)
+            public FuncHttpHandler(Func<HttpContext, Task<bool>> f)
             {
                 _f = f;
             }
 
-            public override Task<ValueOption<HttpContext>> Invoke(HttpContext ctx)
+            public override Task<bool> Invoke(HttpContext ctx)
             {
                 return _f(ctx);
             }
         }
 
-        public static HttpHandler FromFunc(Func<HttpContext, Task<ValueOption<HttpContext>>> f)
+        public static HttpHandler FromFunc(Func<HttpContext, Task<bool>> f)
         {
             return new FuncHttpHandler(f);
         }

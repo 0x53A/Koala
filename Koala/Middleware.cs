@@ -28,17 +28,18 @@ namespace Koala
             var result = await _handler.Invoke(ctx);
             var logger = _loggerFactory.CreateLogger<KoalaMiddleware>();
 
-            await result.Match(ctx2 =>
+            if (result)
             {
                 if (logger.IsEnabled(LogLevel.Debug))
-                    logger.LogDebug($"Koala returned Some for {GetRequestInfo()}");
-                return Task.CompletedTask;
-            }, () =>
+                    logger.LogDebug($"Koala returned 'true' for {GetRequestInfo()}");
+                return;
+            }
+            else
             {
                 if (logger.IsEnabled(LogLevel.Debug))
-                    logger.LogDebug($"Koala returned None for {GetRequestInfo()}");
-                return _next.Invoke(ctx);
-            });
+                    logger.LogDebug($"Koala returned 'false' for {GetRequestInfo()}");
+                await _next.Invoke(ctx);
+            }
         }
     }
 

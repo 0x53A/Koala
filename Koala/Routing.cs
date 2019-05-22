@@ -71,10 +71,10 @@ namespace Koala
 
                 var result = await next.Invoke(ctx);
 
-                result.Match(r => { }, () =>
+                if (!result)
                 {
                     saved.Match(s => ctx.Items[RouteKey] = s, () => ctx.Items.Remove(RouteKey));
-                });
+                }
 
                 return result;
             });
@@ -135,7 +135,7 @@ namespace Koala
             {
                 SetContentType(ctx, "text/plain; charset=utf-8");
                 await WriteUtf8StringToResponse(s, ctx);
-                return ValueOption.Some(ctx);
+                return true;
             });
         }
 
@@ -145,7 +145,7 @@ namespace Koala
             {
                 SetContentType(ctx, "application/json; charset=utf-8"); // note: the charset is theoretically a spec violation
                 await WriteUtf8StringToResponse(s, ctx);
-                return ValueOption.Some(ctx);
+                return true;
             });
         }
 
@@ -167,7 +167,7 @@ namespace Koala
                 var routeCtx = new RouteContext(ctx);
                 var actx = new ActionContext(ctx, routeCtx.RouteData, new Microsoft.AspNetCore.Mvc.Abstractions.ActionDescriptor());
                 await executor.ExecuteAsync(actx, new ObjectResult(o));
-                return ValueOption.Some(ctx);
+                return true;
             });
         }
 
@@ -177,7 +177,7 @@ namespace Koala
             {
                 SetContentType(ctx, "text/html; charset=utf-8");
                 await WriteUtf8StringToResponse(content, ctx);
-                return ValueOption.Some(ctx);
+                return true;
             });
         }
 
@@ -193,7 +193,7 @@ namespace Koala
                 var content = File.ReadAllText(absolutePath);
                 SetContentType(ctx, contentType);
                 await WriteUtf8StringToResponse(content, ctx);
-                return ValueOption.Some(ctx);
+                return true;
             });
         }
 
@@ -250,7 +250,7 @@ namespace Koala
                 var fac = new ActionInvokerFactory(new[] { actionInvokerProvider });
                 IActionInvoker invoker = fac.CreateInvoker(actx);
                 await invoker.InvokeAsync();
-                return ValueOption.Some(ctx);
+                return true;
             });
         }
 
@@ -321,7 +321,7 @@ namespace Koala
                 var bytes = Encoding.UTF8.GetBytes(output);
                 SetContentType(ctx, contentType);
                 await WriteUtf8StringToResponse(output, ctx);
-                return ValueOption.Some(ctx);
+                return true;
             });
         }
 
@@ -334,7 +334,7 @@ namespace Koala
             {
                 if (ctx.Request.Method == HttpMethods.Get)
                     return await next.Invoke(ctx);
-                return ValueOption<HttpContext>.None;
+                return false;
             });
 
         public static HttpHandler GET(HttpHandler next)
@@ -347,7 +347,7 @@ namespace Koala
             {
                 if (ctx.Request.Method == HttpMethods.Post)
                     return await next.Invoke(ctx);
-                return ValueOption<HttpContext>.None;
+                return false;
             });
         }
         public static HttpHandler choose(IEnumerable<HttpHandler> handlers)
@@ -357,10 +357,10 @@ namespace Koala
                 foreach (var h in handlers)
                 {
                     var result = await h.Invoke(ctx);
-                    if (result.IsSome)
-                        return ValueOption.Some(result.Value);
+                    if (result)
+                        return true;
                 }
-                return ValueOption.None;
+                return false;
             });
         }
         public static HttpHandler choose(params HttpHandler[] handlers)
@@ -375,7 +375,7 @@ namespace Koala
                 var currentPath = GetPath(ctx);
                 if (currentPath == path)
                     return await next.Invoke(ctx);
-                return ValueOption.None;
+                return false;
             });
         }
 
@@ -391,7 +391,7 @@ namespace Koala
                 var currentPath = GetPath(ctx);
                 if (currentPath.StartsWith(path))
                     return await next.Invoke(ctx);
-                return ValueOption.None;
+                return false;
             });
         }
 
@@ -425,7 +425,7 @@ namespace Koala
                 ctx.Response.StatusCode = StatusCodes.Status401Unauthorized;
                 ctx.Response.Headers.Add("WWW-Authenticate", "Basic");
                 // DON'T return None, we did handle the request and it failed!
-                return ValueOption.Some(ctx);
+                return true;
             });
         }
 
@@ -449,7 +449,7 @@ namespace Koala
                 ctx.Response.StatusCode = StatusCodes.Status401Unauthorized;
                 ctx.Response.Headers.Add("WWW-Authenticate", "Basic");
                 // DON'T return None, we did handle the request and it failed!
-                return ValueOption.Some(ctx);
+                return true;
             });
         }
 
